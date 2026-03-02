@@ -1,0 +1,45 @@
+# ============================================================
+# FCA Compliance RAG System — Dependencies (Free Stack)
+# ============================================================
+
+# --- Core LangChain orchestration ---
+langchain==0.3.14
+langchain-community==0.3.14
+langchain-groq==0.2.4          # FREE: Groq LLM API (llama-3.3-70b, 14.4k free req/day)
+langchain-chroma==0.2.2
+langchain-huggingface==0.1.2   # FREE: Local HuggingFace embeddings
+
+# --- Vector store ---
+chromadb==0.6.3
+
+# --- Document loaders ---
+pypdf==5.1.0               # PDF ingestion with page-level metadata
+
+# --- Embeddings: 100% FREE, runs locally on CPU ---
+sentence-transformers==3.4.1   # all-MiniLM-L6-v2 — no API key needed
+torch==2.6.0                   # Required by sentence-transformers (CPU version)
+
+# --- Token counting (no OpenAI key needed) ---
+tiktoken==0.8.0
+
+# --- Hybrid retrieval (Phase 2 ready) ---
+rank-bm25==0.2.2
+
+# --- API serving ---
+fastapi==0.115.8
+uvicorn[standard]==0.34.0
+pydantic==2.10.6
+pydantic-settings==2.7.1
+python-multipart==0.0.20   # For file upload endpoints
+
+# --- Config ---
+python-dotenv==1.0.1
+pyyaml==6.0.2              # YAML prompt versioning
+
+# --- Evaluation (Phase 3 ready) ---
+ragas==0.2.12
+datasets==3.2.0
+
+# --- Dev / testing ---
+pytest==8.3.4
+httpx==0.28.1              # For FastAPI test client

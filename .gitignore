@@ -1,0 +1,58 @@
+# ============================================================
+# FCA Compliance RAG — .gitignore
+# ============================================================
+
+# --- SECRETS — NEVER COMMIT THESE ---
+.env
+*.key
+*.pem
+secrets/
+
+# --- ChromaDB (large vector data, re-generated on ingest) ---
+chroma_db/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Virtual environments ---
+venv/
+env/
+.venv/
+ENV/
+
+# --- HuggingFace model cache (large, downloads automatically) ---
+# Stored in ~/.cache/huggingface — not in project dir, but just in case
+models/
+*.bin
+*.safetensors
+
+# --- IDE / Editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Pytest ---
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Jupyter (if used for exploration) ---
+.ipynb_checkpoints/
+
+# --- Raw FCA PDFs (large files — use Git LFS or store separately) ---
+data/raw/
+
+# --- Logs ---
+*.log
+logs/
