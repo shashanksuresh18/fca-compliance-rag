@@ -16,8 +16,9 @@ chromadb==0.6.3
 pypdf==5.1.0               # PDF ingestion with page-level metadata
 
 # --- Embeddings: 100% FREE, runs locally on CPU ---
-sentence-transformers==3.4.1   # all-MiniLM-L6-v2 — no API key needed
+sentence-transformers==2.7.0   # all-MiniLM-L6-v2 — no API key needed
 torch==2.6.0                   # Required by sentence-transformers (CPU version)
+transformers==4.44.2           # Pinned: 4.57+ breaks sentence-transformers 2.x
 
 # --- Token counting (no OpenAI key needed) ---
 tiktoken==0.8.0

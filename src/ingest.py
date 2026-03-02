@@ -242,4 +242,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     count = ingest_directory(args.dir, args.doc_type)
-    print(f"\n✅ Done. {count} chunks stored in ChromaDB.")
+    print(f"\nDone. {count} chunks stored in ChromaDB.")
