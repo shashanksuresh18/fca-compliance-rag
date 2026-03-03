@@ -56,13 +56,13 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="FCA Compliance RAG API",
     description=(
-        "Production-grade Retrieval-Augmented Generation system for FCA regulatory "
-        "compliance documents. All answers are grounded in FCA documentation with "
-        "mandatory citations. Hallucination is guarded against at the architecture level."
+        "Production-grade RAG system for FCA regulatory compliance. "
+        "Phase 2: Hybrid BM25+Vector retrieval with cross-encoder re-ranking. "
+        "All answers grounded in FCA documentation with mandatory citations."
     ),
-    version="1.0.0",
-    docs_url="/docs",       # Swagger UI
-    redoc_url="/redoc",     # ReDoc UI
+    version="2.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 
@@ -91,6 +91,15 @@ class QueryRequest(BaseModel):
         le=15,
         description="Number of document chunks to retrieve (default: 5)",
     )
+    # --- Phase 2 retrieval controls ---
+    use_hybrid: Optional[bool] = Field(
+        default=None,
+        description="Phase 2: Enable BM25 + vector hybrid retrieval. Defaults to settings.use_hybrid.",
+    )
+    use_reranker: Optional[bool] = Field(
+        default=None,
+        description="Phase 2: Enable cross-encoder re-ranking. Defaults to settings.use_reranker.",
+    )
 
 
 class CitationItem(BaseModel):
@@ -106,6 +115,7 @@ class QueryResponse(BaseModel):
     decline_reason: Optional[str] = Field(default=None, description="Why the system declined, if applicable")
     prompt_version: str = Field(description="Prompt template version used for this query")
     chunks_retrieved: int = Field(description="Number of document chunks used as context")
+    retrieval_strategy: Optional[str] = Field(default=None, description="Phase 2: hybrid or vector-only")
 
 
 class IngestRequest(BaseModel):
@@ -165,27 +175,36 @@ async def query(request: QueryRequest):
     """
     Ask a compliance question grounded in FCA documentation.
 
-    The system will:
-    1. Retrieve the top-k most relevant FCA document chunks
-    2. Generate an answer using Groq (llama-3.3-70b)
-    3. Enforce that the answer contains document citations
-    4. If no evidence found, return a structured decline message
+    **Phase 2 retrieval pipeline**:
+    1. BM25 keyword search (great for exact rule refs like "COBS 4.2.1")
+    2. Dense vector search (great for semantic/paraphrased questions)
+    3. Reciprocal Rank Fusion to merge both lists
+    4. Cross-encoder re-ranking for precision
+    5. Citation-enforced LLM generation (Guardrail 1 + 2)
 
-    **In a banking context**: Every answer includes the exact source
-    document and page number, enabling compliance officers to verify
-    the answer against the primary source.
+    Toggle hybrid/reranker per-request or via .env settings.
     """
     logger.info(f"Query received: '{request.question[:80]}'...")
+
+    # Resolve per-request overrides vs. global settings
+    use_hybrid = request.use_hybrid if request.use_hybrid is not None else settings.use_hybrid
+    use_reranker = request.use_reranker if request.use_reranker is not None else settings.use_reranker
 
     try:
         result = generate_answer(
             question=request.question,
             doc_type=request.doc_type,
             top_k=request.top_k,
+            use_hybrid=use_hybrid,
+            use_reranker=use_reranker,
         )
     except Exception as e:
         logger.error(f"Error generating answer: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+
+    strategy = "hybrid-reranked" if use_hybrid and use_reranker else \
+               "hybrid" if use_hybrid else "vector-only"
+    result["retrieval_strategy"] = strategy
 
     return QueryResponse(**result)
 
@@ -216,6 +235,9 @@ async def ingest(
 
     try:
         chunks_stored = ingest_directory(request.directory, request.doc_type)
+        # Phase 2: Invalidate BM25 cache so new chunks are included in keyword search
+        from src.retriever import invalidate_bm25_cache
+        invalidate_bm25_cache()
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:

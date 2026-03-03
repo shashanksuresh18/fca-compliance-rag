@@ -123,24 +123,29 @@ def generate_answer(
     question: str,
     doc_type: Optional[str] = None,
     top_k: Optional[int] = None,
+    use_hybrid: Optional[bool] = None,
+    use_reranker: Optional[bool] = None,
 ) -> dict:
     """
     Full RAG pipeline: Retrieve → Format Context → Generate → Guardrail Check.
 
     Args:
-        question: The compliance question from the user.
-        doc_type: Optional. Filter retrieval to a specific doc type
-                  (e.g. "handbook", "policy", "internal").
-        top_k:    Optional. Override the default number of chunks retrieved.
+        question:     The compliance question from the user.
+        doc_type:     Optional. Filter retrieval to a specific doc type.
+        top_k:        Optional. Override the default number of chunks retrieved.
+        use_hybrid:   Phase 2. If None, uses settings.use_hybrid.
+                      True = BM25 + vector + RRF. False = vector only.
+        use_reranker: Phase 2. If None, uses settings.use_reranker.
+                      True = cross-encoder re-ranking. False = RRF order only.
 
     Returns:
-        A dict with:
-            - answer (str): The grounded answer or decline message.
-            - citations (list[dict]): Source + page for each retrieved chunk.
-            - declined (bool): True if the guardrail rejected the response.
-            - prompt_version (str): Which prompt YAML version was used.
-            - chunks_retrieved (int): How many chunks were found.
+        A dict with answer, citations, declined, decline_reason,
+        prompt_version, chunks_retrieved.
     """
+    # Resolve retrieval strategy
+    _use_hybrid = use_hybrid if use_hybrid is not None else settings.use_hybrid
+    _use_reranker = use_reranker if use_reranker is not None else settings.use_reranker
+
     # ----------------------------------------------------------------
     # STEP 1: Load prompt configuration
     # ----------------------------------------------------------------
@@ -150,9 +155,15 @@ def generate_answer(
     citation_pattern = prompt_config["citation_pattern"]
 
     # ----------------------------------------------------------------
-    # STEP 2: Retrieve relevant chunks from ChromaDB
+    # STEP 2: Retrieve relevant chunks (Phase 2: hybrid retrieval)
     # ----------------------------------------------------------------
-    chunks = retrieve(question, top_k=top_k, doc_type=doc_type)
+    chunks = retrieve(
+        question,
+        top_k=top_k,
+        doc_type=doc_type,
+        use_hybrid=_use_hybrid,
+        use_reranker=_use_reranker,
+    )
 
     # Build citations list from retrieved chunks regardless of outcome
     citations = [
