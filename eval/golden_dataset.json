@@ -1,0 +1,230 @@
+[
+    {
+        "id": "smcr_001",
+        "question": "What are the five Individual Conduct Rules under SM&CR?",
+        "ground_truth": "The five Individual Conduct Rules under SM&CR are: Rule 1 - Act with Integrity, Rule 2 - Act with Due Skill, Care and Diligence, Rule 3 - Be Open and Cooperative with Regulators, Rule 4 - Treat Customers Fairly (pay due regard to interests of customers), Rule 5 - Observe Proper Market Standards.",
+        "expected_source": "mock_sm_cr_policy.md",
+        "doc_type": "internal",
+        "category": "SM&CR",
+        "difficulty": "basic"
+    },
+    {
+        "id": "smcr_002",
+        "question": "What are the Senior Manager Conduct Rules (Tier 2) under SM&CR?",
+        "ground_truth": "Senior Managers must comply with four additional rules: SC1 - Effective Business Control (take reasonable steps to ensure the business is controlled effectively), SC2 - Compliance with Regulatory Requirements, SC3 - Delegation (ensure delegation is to appropriate person and overseen effectively), SC4 - Disclosure to Regulators (disclose information the FCA or PRA would reasonably expect).",
+        "expected_source": "mock_sm_cr_policy.md",
+        "doc_type": "internal",
+        "category": "SM&CR",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "smcr_003",
+        "question": "What is the Certification Regime under SM&CR?",
+        "ground_truth": "The Certification Regime requires firms to annually certify employees who are not Senior Managers but whose roles could cause significant harm. Annual fit and proper assessments must consider honesty/integrity/reputation, competence/capability, and financial soundness. Certificates must be issued in writing and retained for 6 years.",
+        "expected_source": "mock_sm_cr_policy.md",
+        "doc_type": "internal",
+        "category": "SM&CR",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "smcr_004",
+        "question": "Within how many business days must a Conduct Rule breach be reported to the FCA?",
+        "ground_truth": "Any breach of the Conduct Rules by a Senior Manager or certified employee must be reported to the FCA within 7 business days of the firm becoming aware, under SUP 10C.14.",
+        "expected_source": "mock_sm_cr_policy.md",
+        "doc_type": "internal",
+        "category": "SM&CR",
+        "difficulty": "basic"
+    },
+    {
+        "id": "smcr_005",
+        "question": "What Senior Management Function covers Compliance Oversight?",
+        "ground_truth": "SMF16 is the Compliance Oversight Senior Management Function, regulated by the FCA.",
+        "expected_source": "mock_sm_cr_policy.md",
+        "doc_type": "internal",
+        "category": "SM&CR",
+        "difficulty": "basic"
+    },
+    {
+        "id": "smcr_006",
+        "question": "What is a Statement of Responsibilities and when must it be updated?",
+        "ground_truth": "Senior Managers must maintain a current Statement of Responsibilities (SoR) describing their remit. SoRs must be submitted to the regulator and kept up to date within 30 days of any material change.",
+        "expected_source": "mock_sm_cr_policy.md",
+        "doc_type": "internal",
+        "category": "SM&CR",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "smcr_007",
+        "question": "What are the three criteria assessed in the fit and proper assessment under the Certification Regime?",
+        "ground_truth": "The three criteria are: 1) Honesty, integrity and reputation (no relevant criminal convictions, regulatory findings, or civil findings), 2) Competence and capability (holding appropriate qualifications), 3) Financial soundness (no patterns of financial distress that could create conflicts of interest).",
+        "expected_source": "mock_sm_cr_policy.md",
+        "doc_type": "internal",
+        "category": "SM&CR",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "smcr_008",
+        "question": "What is SMF17 responsible for?",
+        "ground_truth": "SMF17 is the Money Laundering Reporting Officer Senior Management Function, regulated by the FCA.",
+        "expected_source": "mock_sm_cr_policy.md",
+        "doc_type": "internal",
+        "category": "SM&CR",
+        "difficulty": "basic"
+    },
+    {
+        "id": "smcr_009",
+        "question": "What is the regulatory basis for SM&CR?",
+        "ground_truth": "SM&CR was introduced by the Financial Services (Banking Reform) Act 2013 and amended by the Financial Services and Markets Act 2023. It is regulated by the Financial Conduct Authority (FCA) and the Prudential Regulation Authority (PRA).",
+        "expected_source": "mock_sm_cr_policy.md",
+        "doc_type": "internal",
+        "category": "SM&CR",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "smcr_010",
+        "question": "How quickly must internal conduct rule breaches be escalated internally?",
+        "ground_truth": "Internal breaches identified through whistleblowing or HR investigation must be escalated to the Compliance Oversight SMF (SMF16) within 24 hours.",
+        "expected_source": "mock_sm_cr_policy.md",
+        "doc_type": "internal",
+        "category": "SM&CR",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "mifid_001",
+        "question": "What are the three client categories under MiFID II?",
+        "ground_truth": "The three client categories are: 1) Retail Clients (highest regulatory protection), 2) Professional Clients (presumed to have expertise, fewer protections), 3) Eligible Counterparties (lowest protection, sophisticated institutions).",
+        "expected_source": "mock_mifid2_client_categorisation.md",
+        "doc_type": "internal",
+        "category": "MiFID II",
+        "difficulty": "basic"
+    },
+    {
+        "id": "mifid_002",
+        "question": "What protections do retail clients receive under MiFID II?",
+        "ground_truth": "Retail clients receive: best execution obligations, suitability and appropriateness assessments before recommending products, enhanced product disclosure (KIDs under PRIIPs), and access to the Financial Ombudsman Service (FOS) and Financial Services Compensation Scheme (FSCS).",
+        "expected_source": "mock_mifid2_client_categorisation.md",
+        "doc_type": "internal",
+        "category": "MiFID II",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "mifid_003",
+        "question": "What are the size criteria for an undertaking to qualify as a per se professional client under MiFID II?",
+        "ground_truth": "Large undertakings qualify as per se professionals if they meet two of three criteria: (i) balance sheet of at least 20 million euros, (ii) net turnover of at least 40 million euros, (iii) own funds of at least 2 million euros.",
+        "expected_source": "mock_mifid2_client_categorisation.md",
+        "doc_type": "internal",
+        "category": "MiFID II",
+        "difficulty": "advanced"
+    },
+    {
+        "id": "mifid_004",
+        "question": "What are the three criteria a retail client must meet to be reclassified as an elective professional?",
+        "ground_truth": "A retail client must meet at least two of: 1) At least 10 significant transactions per quarter over the prior 4 quarters, 2) Portfolio size exceeding 500,000 euros, 3) Professional experience in the financial sector requiring knowledge of relevant transactions.",
+        "expected_source": "mock_mifid2_client_categorisation.md",
+        "doc_type": "internal",
+        "category": "MiFID II",
+        "difficulty": "advanced"
+    },
+    {
+        "id": "mifid_005",
+        "question": "What is the process for a retail client to opt up to professional status under MiFID II?",
+        "ground_truth": "The firm must: conduct an adequate assessment of the client's expertise and knowledge, warn the client in writing of the protections they will lose, obtain clear written confirmation from the client that they understand the consequences, and document all steps in the client file. Firms may not solicit clients to opt up - the request must come from the client.",
+        "expected_source": "mock_mifid2_client_categorisation.md",
+        "doc_type": "internal",
+        "category": "MiFID II",
+        "difficulty": "advanced"
+    },
+    {
+        "id": "mifid_006",
+        "question": "What is the ECP classification limited to under MiFID II?",
+        "ground_truth": "The ECP classification only applies when dealing in execution and transmission of orders relating to financial instruments, or reception and transmission of orders on their own account.",
+        "expected_source": "mock_mifid2_client_categorisation.md",
+        "doc_type": "internal",
+        "category": "MiFID II",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "mifid_007",
+        "question": "How often must client classifications be reviewed?",
+        "ground_truth": "Client classifications must be reviewed annually or when material changes in client circumstances occur.",
+        "expected_source": "mock_mifid2_client_categorisation.md",
+        "doc_type": "internal",
+        "category": "MiFID II",
+        "difficulty": "basic"
+    },
+    {
+        "id": "mifid_008",
+        "question": "Can a firm solicit a retail client to become a professional client?",
+        "ground_truth": "No. Firms may not solicit clients to opt up to professional status. The request must come from the client.",
+        "expected_source": "mock_mifid2_client_categorisation.md",
+        "doc_type": "internal",
+        "category": "MiFID II",
+        "difficulty": "basic"
+    },
+    {
+        "id": "mifid_009",
+        "question": "What is the regulatory basis for UK MiFID client categorisation after Brexit?",
+        "ground_truth": "MiFID II was onshored into UK law through the Financial Services and Markets Act 2000 as amended by the European Union (Withdrawal) Act 2018. The UK equivalent is now administered by the FCA under the UK MiFID framework.",
+        "expected_source": "mock_mifid2_client_categorisation.md",
+        "doc_type": "internal",
+        "category": "MiFID II",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "mifid_010",
+        "question": "What must be included in writing when notifying a client of their categorisation?",
+        "ground_truth": "The firm must inform the client in writing of their categorisation and the level of protection this affords, and also inform them of their right to request a different categorisation and the protections they will gain or lose.",
+        "expected_source": "mock_mifid2_client_categorisation.md",
+        "doc_type": "internal",
+        "category": "MiFID II",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "decline_001",
+        "question": "What is the FCA's position on cryptocurrency staking yield tax treatment?",
+        "ground_truth": "INSUFFICIENT_EVIDENCE",
+        "expected_source": null,
+        "doc_type": null,
+        "category": "decline_test",
+        "difficulty": "basic",
+        "note": "System should decline — not in any ingested document"
+    },
+    {
+        "id": "decline_002",
+        "question": "What are the GDPR requirements for data retention in UK banking?",
+        "ground_truth": "INSUFFICIENT_EVIDENCE",
+        "expected_source": null,
+        "doc_type": null,
+        "category": "decline_test",
+        "difficulty": "basic",
+        "note": "System should decline — not in any ingested document"
+    },
+    {
+        "id": "decline_003",
+        "question": "What is the Bank of England base rate as of today?",
+        "ground_truth": "INSUFFICIENT_EVIDENCE",
+        "expected_source": null,
+        "doc_type": null,
+        "category": "decline_test",
+        "difficulty": "basic",
+        "note": "System should decline — real-time data not in corpus"
+    },
+    {
+        "id": "smcr_011",
+        "question": "What happens if a Senior Manager fails to report a conduct rule breach to the FCA?",
+        "ground_truth": "Failure to report a breach is itself a breach of SC4 (Disclosure to Regulators), which is one of the Senior Manager Conduct Rules.",
+        "expected_source": "mock_sm_cr_policy.md",
+        "doc_type": "internal",
+        "category": "SM&CR",
+        "difficulty": "intermediate"
+    },
+    {
+        "id": "mifid_011",
+        "question": "What does opting down mean for a professional client under MiFID II?",
+        "ground_truth": "Opting down means a professional client or eligible counterparty requesting a higher level of regulatory protection. A professional client can request retail protection, and the firm must provide this if requested and document the change.",
+        "expected_source": "mock_mifid2_client_categorisation.md",
+        "doc_type": "internal",
+        "category": "MiFID II",
+        "difficulty": "intermediate"
+    }
+]

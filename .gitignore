@@ -56,3 +56,6 @@ data/raw/
 # --- Logs ---
 *.log
 logs/
+
+# --- Eval results (uploaded as CI artifacts, not committed) ---
+eval/results.json
