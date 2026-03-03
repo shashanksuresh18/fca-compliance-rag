@@ -9,6 +9,7 @@ Phase 2 adds:
   - candidate_k_multiplier: how many candidates to pre-fetch per retrieval method
 """
 
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 
@@ -20,12 +21,29 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # --- Groq (FREE LLM) ---
-    groq_api_key: str = Field(..., description="Groq API key (console.groq.com)")
+    # LLM Choice: "GROQ" or "AZURE"
+    llm_provider: str = "GROQ"
+    
+    # -----------------------------------------------------------------------
+    # GROQ SETTINGS (Phase 1-4.2)
+    # -----------------------------------------------------------------------
+    groq_api_key: Optional[str] = None
     llm_model: str = Field(
         default="llama-3.3-70b-versatile",
         description="Groq model. Options: llama-3.3-70b-versatile, llama-3.1-8b-instant",
     )
+    
+    # -----------------------------------------------------------------------
+    # AZURE SETTINGS (Phase 4.6 Migration)
+    # -----------------------------------------------------------------------
+    azure_openai_api_key: Optional[str] = None
+    azure_openai_endpoint: Optional[str] = None
+    azure_openai_deployment_name: str = "gpt-4o"  # Deployment name in Azure
+    azure_openai_api_version: str = "2024-02-15-preview"
+    
+    azure_search_api_key: Optional[str] = None
+    azure_search_endpoint: Optional[str] = None
+    azure_search_index_name: str = "fca-compliance-index"
 
     # --- Embeddings: LOCAL, zero cost ---
     embedding_model: str = Field(

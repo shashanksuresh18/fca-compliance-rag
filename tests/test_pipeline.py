@@ -219,9 +219,11 @@ class TestGuardrailCitationCheck:
             "citation_pattern": r"\[Source: .+, Page \d+\]",
             "decline_prefix": "INSUFFICIENT_EVIDENCE:",
         }
-        mock_retrieve.return_value = [make_mock_chunk()]
+        mock_retrieve.return_value = [
+            make_mock_chunk(content="SM&CR requires firms to act with integrity and skill.")
+        ]
 
-        # LLM returns an answer WITH a proper citation
+        # LLM returns an answer WITH a proper citation matching the keywords above
         mock_llm = MagicMock()
         mock_llm.invoke.return_value = MagicMock(
             content=(

@@ -32,14 +32,21 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Security, Request
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from src.config import settings
-from src.generator import generate_answer
+from src.graph import rag_graph
 from src.ingest import ingest_directory
-from src.store import get_collection_stats
+from src.otel import setup_otel
+from src.store import get_collection_stats, get_vector_store
+from src.pii import mask_pii, has_pii
+from src.injection_guard import check_query_for_injection
+from src.auth import get_current_user, UserContext, verify_admin
+from src.audit_log import audit_logger
+from src.utils import Timer
 
 # ---------------------------------------------------------------------------
 # Logging configuration
@@ -51,19 +58,28 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# FastAPI app
+# FastAPI initialization
 # ---------------------------------------------------------------------------
+
 app = FastAPI(
     title="FCA Compliance RAG API",
     description=(
-        "Production-grade RAG system for FCA regulatory compliance. "
-        "Phase 2: Hybrid BM25+Vector retrieval with cross-encoder re-ranking. "
-        "All answers grounded in FCA documentation with mandatory citations."
+        "Barclays-Grade Compliance Assistant — Phase 4 Hardened.\n\n"
+        "Security: JWT RBAC, PII masking, injection blocking.\n"
+        "Reliability: LangGraph orchestration, evidence grading, audit logging."
     ),
-    version="2.0.0",
-    docs_url="/docs",
+    version="4.0.0",
     redoc_url="/redoc",
 )
+
+# Phase 5: Serve the Premium UI
+static_dir = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+@app.get("/", include_in_schema=False)
+async def root_redirect():
+    """Redirect root to the UI."""
+    return RedirectResponse(url="/static/index.html")
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +132,18 @@ class QueryResponse(BaseModel):
     prompt_version: str = Field(description="Prompt template version used for this query")
     chunks_retrieved: int = Field(description="Number of document chunks used as context")
     retrieval_strategy: Optional[str] = Field(default=None, description="Phase 2: hybrid or vector-only")
+    evidence_support_rate: Optional[float] = Field(
+        default=None,
+        description="Phase 4: Fraction of answer claims grounded in source documents (1.0 = no hallucination)"
+    )
+    pii_detected: bool = Field(
+        default=False,
+        description="Phase 4: True if PII was detected in the query (masked before processing)"
+    )
+    trace_id: Optional[str] = Field(
+        default=None,
+        description="Phase 4: Unique trace ID for audit logging and debugging"
+    )
 
 
 class IngestRequest(BaseModel):
@@ -171,40 +199,73 @@ async def health_check():
 
 
 @app.post("/query", response_model=QueryResponse, tags=["RAG"])
-async def query(request: QueryRequest):
+async def query(
+    request: QueryRequest,
+    user: UserContext = Security(get_current_user)
+):
     """
     Ask a compliance question grounded in FCA documentation.
 
-    **Phase 2 retrieval pipeline**:
-    1. BM25 keyword search (great for exact rule refs like "COBS 4.2.1")
-    2. Dense vector search (great for semantic/paraphrased questions)
-    3. Reciprocal Rank Fusion to merge both lists
-    4. Cross-encoder re-ranking for precision
-    5. Citation-enforced LLM generation (Guardrail 1 + 2)
-
-    Toggle hybrid/reranker per-request or via .env settings.
+    **Phase 4 pipeline**:
+    1. JWT Auth — verifies user role (admin, compliance, analyst)
+    2. PII scan — detects + masks UK PII in query before logging
+    3. Injection guard — blocks prompt manipulation attempts
+    4. Retrieval ACLs — filters chunks based on user role
+    5. Evidence grader — atomic claim verification (Guardrail 3)
+    6. Audit Logging — structured trace recorded for every request
     """
-    logger.info(f"Query received: '{request.question[:80]}'...")
+    # -------------------------------------------------------------------
+    # Phase 4 Wave 3: LangGraph Orchestration
+    # -------------------------------------------------------------------
+    # The graph handles PII, injection, retrieval, generation, and grading.
+    # We pass the full state and let the graph execute the nodes.
+    
+    initial_state = {
+        "question": request.question,
+        "user_role": user.role,
+        "doc_type": request.doc_type,
+        "top_k": request.top_k or settings.top_k,
+        "use_hybrid": request.use_hybrid if request.use_hybrid is not None else settings.use_hybrid,
+        "use_reranker": request.use_reranker if request.use_reranker is not None else settings.use_reranker,
+        "pii_detected": False,
+        "is_injection": False,
+        "chunks": [],
+        "raw_answer": "",
+        "graded_answer": None
+    }
 
-    # Resolve per-request overrides vs. global settings
-    use_hybrid = request.use_hybrid if request.use_hybrid is not None else settings.use_hybrid
-    use_reranker = request.use_reranker if request.use_reranker is not None else settings.use_reranker
+    with Timer() as timer:
+        try:
+            # Invoke the compiled state machine
+            final_state = rag_graph.invoke(initial_state)
+            result = final_state["final_output"]
+        except Exception as e:
+            logger.error(f"Graph execution failed: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
-    try:
-        result = generate_answer(
-            question=request.question,
-            doc_type=request.doc_type,
-            top_k=request.top_k,
-            use_hybrid=use_hybrid,
-            use_reranker=use_reranker,
-        )
-    except Exception as e:
-        logger.error(f"Error generating answer: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
-
+    # Add retrieval strategy for response metadata
+    use_hybrid = initial_state["use_hybrid"]
+    use_reranker = initial_state["use_reranker"]
     strategy = "hybrid-reranked" if use_hybrid and use_reranker else \
                "hybrid" if use_hybrid else "vector-only"
     result["retrieval_strategy"] = strategy
+    
+    # Trace ID from Audit Log
+    # Note: We use safe_question (masked) for the audit log
+    safe_question, _ = mask_pii(request.question)
+    
+    trace_id = audit_logger.log_event(
+        user_id=user.user_id,
+        user_role=user.role,
+        query_masked=safe_question,
+        response_data=result,
+        latency_ms=timer.interval
+    )
+    result["trace_id"] = trace_id
+
+    # Clean up verbose fields for the API response
+    result.pop("evidence_claims", None)
+    result.pop("rejected_answer", None)
 
     return QueryResponse(**result)
 
@@ -212,24 +273,13 @@ async def query(request: QueryRequest):
 @app.post("/ingest", response_model=IngestResponse, tags=["Administration"])
 async def ingest(
     request: IngestRequest,
-    x_api_key: Optional[str] = Header(default=None),
+    admin_user: UserContext = Security(verify_admin),
 ):
     """
     Ingest a directory of PDF and Markdown documents into ChromaDB.
 
-    **Protected endpoint**: Requires X-API-Key header matching the
-    server's API_SECRET_KEY setting in production.
-
-    IMPORTANT: In production, restrict this endpoint to internal
-    network only — never expose it on a public-facing API gateway.
+    **Protected endpoint**: Requires a JWT with 'admin' role.
     """
-    # Simple API key check — upgrade to OAuth2 / JWT in production
-    if settings.api_secret_key != "change-me-in-production":
-        if x_api_key != settings.api_secret_key:
-            raise HTTPException(
-                status_code=401,
-                detail="Unauthorized: valid X-API-Key header required for /ingest"
-            )
 
     logger.info(f"Ingest request: dir='{request.directory}', type='{request.doc_type}'")
 

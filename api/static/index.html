@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCA Compliance RAG - Barclays-Grade</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Sidebar: Role Simulation & Status -->
+        <aside class="sidebar glass">
+            <div class="brand">
+                <i class="fa-solid fa-shield-halved brand-icon"></i>
+                <h1>FCA Compliance <span>RAG</span></h1>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3><i class="fa-solid fa-user-gear"></i> Role Simulator</h3>
+                <p class="section-desc">Test RBAC / ACL policies in real-time.</p>
+                <div class="role-selector">
+                    <button class="role-btn active" data-role="admin">
+                        <i class="fa-solid fa-user-shield"></i> Admin
+                    </button>
+                    <button class="role-btn" data-role="compliance">
+                        <i class="fa-solid fa-user-check"></i> Compliance
+                    </button>
+                    <button class="role-btn" data-role="analyst">
+                        <i class="fa-solid fa-user"></i> Analyst
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-section status-section">
+                <h3><i class="fa-solid fa-signal"></i> System Status</h3>
+                <div class="status-items">
+                    <div class="status-item">
+                        <span class="label">Vector Store</span>
+                        <span class="value online">Online</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">LLM Provider</span>
+                        <span class="value" id="llm-provider-display">GROQ</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Guardrails</span>
+                        <span class="value online">Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <p>Phase 4 Hardened Version</p>
+                <span class="version-tag">v4.0.0</span>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-main">
+            <header class="chat-header glass">
+                <div class="header-info">
+                    <h2>Compliance Assistant</h2>
+                    <span class="session-label">Regulated Banking Environment</span>
+                </div>
+                <div class="header-actions">
+                    <button id="clear-chat" title="Clear Session"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            </header>
+
+            <div class="messages-container" id="chat-messages">
+                <!-- Welcome Message -->
+                <div class="message assistant glass">
+                    <div class="message-content">
+                        <p>Welcome to the <strong>FCA Compliance RAG Service</strong>.</p>
+                        <p>This system is hardened with:</p>
+                        <ul>
+                            <li><i class="fa-solid fa-circle-check"></i> <strong>Evidence-Bound Answering</strong>: Claims are verified against source documents.</li>
+                            <li><i class="fa-solid fa-lock"></i> <strong>RBAC/ACL Enforcement</strong>: Retrieval is restricted based on your role.</li>
+                            <li><i class="fa-solid fa-mask"></i> <strong>PII Protection</strong>: Sensitive data is automatically masked.</li>
+                        </ul>
+                        <p>How can I assist with your regulatory compliance query today?</p>
+                    </div>
+                    <div class="message-meta">System Initialized</div>
+                </div>
+            </div>
+
+            <footer class="input-area">
+                <form id="query-form" class="glass">
+                    <textarea id="query-input" placeholder="Enter your compliance query..." rows="1" required></textarea>
+                    <button type="submit" id="send-btn">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+                <p class="input-disclaimer">All queries are audit-logged for regulatory compliance.</p>
+            </footer>
+        </main>
+
+        <!-- Evidence Panel (Collapsible) -->
+        <section class="evidence-panel glass collapsed" id="evidence-sidebar">
+            <header class="panel-header">
+                <h3><i class="fa-solid fa-book-bookmark"></i> Evidence & Sources</h3>
+                <button id="close-evidence"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="evidence-content" id="evidence-list">
+                <div class="empty-evidence">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <p>Select a cited response to view supporting evidence sections.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Templates for Dynamic Content -->
+    <template id="message-template">
+        <div class="message">
+            <div class="message-content"></div>
+            <div class="message-meta"></div>
+        </div>
+    </template>
+
+    <template id="source-card-template">
+        <div class="source-card glass">
+            <div class="source-header">
+                <span class="source-file"></span>
+                <span class="source-page"></span>
+            </div>
+            <div class="source-text"></div>
+            <div class="source-footer">
+                <span class="doc-type"></span>
+            </div>
+        </div>
+    </template>
+
+    <script src="app.js"></script>
+</body>
+</html>

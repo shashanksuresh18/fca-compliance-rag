@@ -5,9 +5,12 @@
 # --- Core LangChain orchestration ---
 langchain==0.3.14
 langchain-community==0.3.14
+langgraph==0.2.66
 langchain-groq==0.2.4          # FREE: Groq LLM API (llama-3.3-70b, 14.4k free req/day)
+langchain-openai==0.3.19       # Phase 4.6: Azure OpenAI support
 langchain-chroma==0.2.2
 langchain-huggingface==0.1.2   # FREE: Local HuggingFace embeddings
+azure-search-documents==11.5.0 # Phase 4.6: Azure AI Search
 
 # --- Vector store ---
 chromadb==0.6.3
@@ -40,6 +43,14 @@ pyyaml==6.0.2              # YAML prompt versioning
 # --- Evaluation (Phase 3 ready) ---
 ragas==0.2.12
 datasets==3.2.0
+
+# --- Platform & Reliability ---
+pyjwt[crypto]==2.10.1         # Phase 4: Token-based Auth
+cryptography==44.0.1
+opentelemetry-api==1.29.0      # Phase 4: Observability
+opentelemetry-sdk==1.29.0
+opentelemetry-instrumentation-fastapi==0.50b0
+opentelemetry-exporter-otlp==1.29.0
 
 # --- Dev / testing ---
 pytest==8.3.4

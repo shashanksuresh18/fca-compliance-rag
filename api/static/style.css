@@ -1,0 +1,388 @@
+:root {
+    /* Color Palette - Banking Premium */
+    --bg-dark: #0f172a;
+    --sidebar-bg: #1e293b77;
+    --accent-blue: #3b82f6;
+    --accent-blue-glow: rgba(59, 130, 246, 0.4);
+    --accent-emerald: #10b981;
+    --accent-rose: #f43f5e;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    
+    /* Layout */
+    --sidebar-width: 280px;
+    --evidence-width: 320px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    line-height: 1.6;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.dark-theme {
+    background: radial-gradient(circle at top right, #1e293b, #0f172a);
+}
+
+.glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+}
+
+.app-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 1.5rem;
+    border-right: 1px solid var(--glass-border);
+    z-index: 100;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 3rem;
+}
+
+.brand-icon {
+    font-size: 1.8rem;
+    color: var(--accent-blue);
+    filter: drop-shadow(0 0 8px var(--accent-blue-glow));
+}
+
+.brand h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.brand h1 span {
+    color: var(--accent-blue);
+}
+
+.sidebar-section {
+    margin-bottom: 2.5rem;
+}
+
+.sidebar-section h3 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.role-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.role-btn {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.role-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.role-btn.active {
+    background: var(--accent-blue-glow);
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+}
+
+.status-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+
+.status-item .label { color: var(--text-secondary); }
+.status-item .online { color: var(--accent-emerald); font-weight: 600; }
+
+.sidebar-footer {
+    margin-top: auto;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.version-tag {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Chat Main Styling */
+.chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.chat-header {
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.header-info h2 { font-size: 1.1rem; font-weight: 600; }
+.session-label { font-size: 0.75rem; color: var(--text-secondary); }
+
+#clear-chat {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: color 0.2s;
+}
+
+#clear-chat:hover { color: var(--accent-rose); }
+
+/* Messages Area */
+.messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.message {
+    max-width: 85%;
+    padding: 1.25rem 1.5rem;
+    border-radius: 12px;
+    position: relative;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message.assistant {
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+}
+
+.message.user {
+    align-self: flex-end;
+    background: var(--accent-blue-glow);
+    border: 1px solid var(--accent-blue);
+    border-bottom-right-radius: 2px;
+}
+
+.message-content { font-size: 0.95rem; }
+.message-content p { margin-bottom: 0.75rem; }
+.message-content ul { margin-left: 1.5rem; margin-bottom: 0.75rem; }
+.message-content li { margin-bottom: 0.25rem; }
+
+.message-meta {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.citation-tag {
+    color: var(--accent-blue);
+    cursor: pointer;
+    text-decoration: underline;
+    font-weight: 500;
+}
+
+/* Input Area */
+.input-area {
+    padding: 1.5rem 2rem;
+    background: linear-gradient(to top, var(--bg-dark), transparent);
+}
+
+#query-form {
+    display: flex;
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    align-items: center;
+}
+
+#query-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: none;
+    max-height: 150px;
+    outline: none;
+}
+
+#send-btn {
+    background: var(--accent-blue);
+    color: white;
+    border: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+}
+
+#send-btn:hover { background: #2563eb; transform: scale(1.05); }
+#send-btn:disabled { background: var(--text-secondary); cursor: not-allowed; }
+
+.input-disclaimer {
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 0.75rem;
+}
+
+/* Evidence Panel Styling */
+.evidence-panel {
+    width: var(--evidence-width);
+    border-left: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.evidence-panel.collapsed {
+    transform: translateX(100%);
+    position: absolute;
+    right: 0;
+    height: 100%;
+}
+
+.panel-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-header h3 { font-size: 0.9rem; font-weight: 600; display: flex; gap: 0.5rem; align-items: center; }
+
+#close-evidence { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.2rem; }
+
+.evidence-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.empty-evidence {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-secondary);
+    text-align: center;
+    gap: 1rem;
+}
+
+.empty-evidence i { font-size: 2rem; opacity: 0.3; }
+
+.source-card {
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+.source-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--accent-blue);
+    font-weight: 600;
+}
+
+.source-text {
+    line-height: 1.4;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    font-style: italic;
+}
+
+.source-footer .doc-type {
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* Mobile Support (Brief) */
+@media (max-width: 900px) {
+    .sidebar { display: none; }
+    .evidence-panel { display: none; }
+}

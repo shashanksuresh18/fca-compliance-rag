@@ -8,7 +8,7 @@ it's a legal risk. A compliance officer who acts on a hallucinated
 FCA rule number could expose the bank to regulatory enforcement action
 (FCA fines, business restrictions, public censure).
 
-TWO GUARDRAILS IMPLEMENTED HERE:
+THREE GUARDRAILS IMPLEMENTED HERE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 GUARDRAIL 1 — EMPTY CONTEXT DECLINE:
   If the retriever returns zero chunks, we never call the LLM.
@@ -23,6 +23,13 @@ GUARDRAIL 2 — CITATION ENFORCEMENT:
 
   LLMs can "fake confidence" even when instructed to cite sources.
   This hard post-generation check is the safety net.
+
+GUARDRAIL 3 — EVIDENCE GRADING (Phase 4):
+  Each sentence in the answer is decomposed into atomic claims.
+  Every claim is keyword-matched against retrieved chunks.
+  Unsupported claims are removed. If >50% of claims are unsupported,
+  the answer is declined entirely. This is the correct approach for
+  a regulated environment — every claim is traceable to a source.
 
 FREE STACK:
   Groq API with llama-3.3-70b-versatile — free, fast (~200 tokens/sec)
@@ -48,6 +55,10 @@ from langchain.schema import Document, HumanMessage, SystemMessage
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.config import settings
 from src.retriever import retrieve
+from src.evidence_grader import grade_claims
+from src.injection_guard import sanitize_chunks
+from src.utils import llm_circuit_breaker, Timer
+from src.prompter import load_prompt_config, build_context_block, check_citation_present
 
 logger = logging.getLogger(__name__)
 
@@ -59,68 +70,16 @@ DECLINE_MESSAGE = (
 )
 
 
-def _load_prompt_config() -> dict:
-    """
-    Load the versioned prompt template from YAML.
-    Version is controlled by settings.prompt_version.
-
-    WHY YAML VERSIONING: Every prompt change is a code change with a
-    Git commit hash. Regulators can ask "what prompt was used in March 2026?"
-    and you can answer precisely.
-    """
-    prompt_path = (
-        Path(__file__).resolve().parent.parent
-        / "prompts"
-        / settings.prompt_version
-        / "qa_prompt.yaml"
-    )
-    if not prompt_path.exists():
-        raise FileNotFoundError(
-            f"Prompt file not found: {prompt_path}. "
-            f"Check settings.prompt_version = '{settings.prompt_version}'"
-        )
-    with open(prompt_path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
-def _build_context_block(chunks: list[Document]) -> str:
-    """
-    Format retrieved chunks into a structured context block for the LLM.
-
-    Each chunk is labelled with its source and page number so the LLM
-    can directly embed citations from the provided text.
-    The structured format (CHUNK [N]) helps the model track which
-    evidence came from which source.
-    """
-    parts = []
-    for i, chunk in enumerate(chunks, start=1):
-        source = chunk.metadata.get("source_file", "Unknown Document")
-        page = chunk.metadata.get("page_number", "?")
-        doc_type = chunk.metadata.get("doc_type_label", "FCA Document")
-
-        parts.append(
-            f"--- CHUNK [{i}] ---\n"
-            f"Document: {source} ({doc_type})\n"
-            f"Page: {page}\n"
-            f"Content:\n{chunk.page_content.strip()}\n"
-        )
-    return "\n".join(parts)
-
-
-def _check_citation_present(answer: str, citation_pattern: str) -> bool:
-    """
-    GUARDRAIL 2: Verify the LLM's answer contains at least one valid citation.
-
-    Pattern from YAML: \\[Source: .+, Page \\d+\\]
-    Example match:  [Source: fca_handbook.pdf, Page 42]
-
-    Returns True if at least one citation is present, False otherwise.
-    """
-    return bool(re.search(citation_pattern, answer))
+# These were moved to src/prompter.py for Wave 3 Graph reuse
+# They are kept here as aliases for backward compatibility if needed.
+_load_prompt_config = load_prompt_config
+_build_context_block = build_context_block
+_check_citation_present = check_citation_present
 
 
 def generate_answer(
     question: str,
+    user_role: str = "analyst",
     doc_type: Optional[str] = None,
     top_k: Optional[int] = None,
     use_hybrid: Optional[bool] = None,
@@ -131,6 +90,7 @@ def generate_answer(
 
     Args:
         question:     The compliance question from the user.
+        user_role:    Phase 4.3: Role extracted from JWT (admin, compliance, analyst).
         doc_type:     Optional. Filter retrieval to a specific doc type.
         top_k:        Optional. Override the default number of chunks retrieved.
         use_hybrid:   Phase 2. If None, uses settings.use_hybrid.
@@ -140,7 +100,8 @@ def generate_answer(
 
     Returns:
         A dict with answer, citations, declined, decline_reason,
-        prompt_version, chunks_retrieved.
+        prompt_version, chunks_retrieved, evidence_support_rate,
+        and internal performance metrics.
     """
     # Resolve retrieval strategy
     _use_hybrid = use_hybrid if use_hybrid is not None else settings.use_hybrid
@@ -163,6 +124,7 @@ def generate_answer(
         doc_type=doc_type,
         use_hybrid=_use_hybrid,
         use_reranker=_use_reranker,
+        user_role=user_role,
     )
 
     # Build citations list from retrieved chunks regardless of outcome
@@ -193,7 +155,14 @@ def generate_answer(
         }
 
     # ----------------------------------------------------------------
-    # STEP 3: Format context block with source labels
+    # STEP 3a: Sanitize chunks against indirect injection (Phase 4)
+    # ----------------------------------------------------------------
+    chunks, n_sanitized = sanitize_chunks(chunks)
+    if n_sanitized:
+        logger.warning(f"Sanitized {n_sanitized} chunks (indirect injection detected).")
+
+    # ----------------------------------------------------------------
+    # STEP 3b: Format context block with source labels
     # ----------------------------------------------------------------
     context_block = _build_context_block(chunks)
     user_message = user_prompt_template.format(
@@ -213,6 +182,8 @@ def generate_answer(
         groq_api_key=settings.groq_api_key,
         temperature=0,           # 0 = deterministic, better for compliance
         max_tokens=2048,
+        request_timeout=30.0,    # P4.7: 30s timeout
+        max_retries=3,           # P4.7: 3 retries with backoff
     )
 
     messages = [
@@ -220,10 +191,25 @@ def generate_answer(
         HumanMessage(content=user_message),
     ]
 
-    response = llm.invoke(messages)
-    raw_answer = response.content.strip()
+    with Timer() as timer:
+        try:
+            # P4.7: Wrap LLM call with Circuit Breaker
+            response = llm_circuit_breaker.call(llm.invoke, messages)
+            raw_answer = response.content.strip()
+        except Exception as e:
+            logger.error(f"LLM call failed or circuit breaker open: {e}")
+            return {
+                "answer": DECLINE_MESSAGE,
+                "citations": citations,
+                "declined": True,
+                "decline_reason": f"llm_error_or_timeout: {str(e)[:50]}",
+                "prompt_version": settings.prompt_version,
+                "chunks_retrieved": len(chunks),
+                "latency_ms": timer.interval if hasattr(timer, 'interval') else 0,
+            }
 
-    logger.info(f"  ✓ LLM responded ({len(raw_answer)} chars)")
+    latency_ms = timer.interval
+    logger.info(f"  ✓ LLM responded ({len(raw_answer)} chars) in {latency_ms:.1f}ms")
 
     # ----------------------------------------------------------------
     # GUARDRAIL 2: Citation enforcement — reject if no [Source: ...] found
@@ -256,12 +242,47 @@ def generate_answer(
         }
 
     # ----------------------------------------------------------------
-    # STEP 5: Return grounded, cited answer
+    # GUARDRAIL 3: Evidence grading — atomic claim verification (Phase 4)
+    # ----------------------------------------------------------------
+    graded = grade_claims(raw_answer, chunks)
+
+    if graded.declined:
+        logger.warning(
+            f"GUARDRAIL 3 TRIGGERED: Evidence grader declined answer. "
+            f"Reason: {graded.decline_reason} | "
+            f"Support rate: {graded.support_rate:.1%}"
+        )
+        return {
+            "answer": DECLINE_MESSAGE,
+            "citations": citations,
+            "declined": True,
+            "decline_reason": f"evidence_grader:{graded.decline_reason}",
+            "prompt_version": settings.prompt_version,
+            "chunks_retrieved": len(chunks),
+            "evidence_support_rate": graded.support_rate,
+        }
+
+    # Use graded answer (unsupported claims trimmed) if available
+    final_answer = graded.graded_answer or raw_answer
+
+    # ----------------------------------------------------------------
+    # STEP 5: Return grounded, cited, evidence-graded answer
     # ----------------------------------------------------------------
     return {
-        "answer": raw_answer,
+        "answer": final_answer,
         "citations": citations,
         "declined": False,
         "prompt_version": settings.prompt_version,
         "chunks_retrieved": len(chunks),
+        "evidence_support_rate": graded.support_rate,
+        "latency_ms": latency_ms,
+        "evidence_claims": [
+            {
+                "text": c.text[:120],
+                "supported": c.supported,
+                "source_file": c.source_file,
+                "page_number": c.page_number,
+            }
+            for c in graded.claims
+        ],
     }

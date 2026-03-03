@@ -56,6 +56,7 @@ PRODUCTION PITFALLS:
 
 import logging
 import sys
+import time
 from pathlib import Path
 from typing import List, Optional
 
@@ -64,6 +65,7 @@ from langchain.schema import Document
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.config import settings
 from src.store import get_vector_store
+from src.acl_filter import filter_chunks_by_role
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +75,10 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 _bm25_index = None          # BM25 instance
 _bm25_corpus: List[Document] = []  # The chunk documents the index is built over
+
+# Phase 4.7: Simple result cache for identical queries (TTL: 5 min)
+_retrieval_cache = {}
+_cache_expiry = {}
 
 
 def _build_bm25_index(doc_type_filter: Optional[str] = None):
@@ -274,6 +280,7 @@ def retrieve(
     doc_type: Optional[str] = None,
     use_hybrid: bool = True,
     use_reranker: bool = True,
+    user_role: str = "analyst", # Phase 4.3: Default to lowest privilege
 ) -> List[Document]:
     """
     Phase 2 retrieval: Hybrid BM25 + Vector Search with Cross-Encoder Re-ranking.
@@ -294,6 +301,19 @@ def retrieve(
     Returns:
         List of the most relevant Document chunks, ordered by relevance.
     """
+    global _retrieval_cache, _cache_expiry
+
+    # ------------------------------------------------------------------
+    # Phase 4.7: Cache check
+    # ------------------------------------------------------------------
+    cache_key = (query, doc_type, top_k, use_hybrid, use_reranker, user_role)
+    if cache_key in _retrieval_cache:
+        if time.time() < _cache_expiry.get(cache_key, 0):
+            logger.info("  ✓ Retrieval Cache Hit")
+            return _retrieval_cache[cache_key]
+        else:
+            del _retrieval_cache[cache_key]
+            del _cache_expiry[cache_key]
     k = top_k or settings.top_k
     # Retrieve 2x candidates from each method to give the re-ranker
     # a rich pool to work with
@@ -306,12 +326,14 @@ def retrieve(
     )
 
     # ------------------------------------------------------------------
-    # Step 1: Dense vector retrieval
+    # Step 1: Dense vector retrieval (with Phase 4.7 Timeout)
     # ------------------------------------------------------------------
     store = get_vector_store()
     where_filter = {"doc_type": {"$eq": doc_type}} if doc_type else None
 
     try:
+        # ChromaDB doesn't support a direct timeout param in similarity_search 
+        # but we could wrap it if needed. For now, adding log before/after.
         vector_results = store.similarity_search(
             query=query,
             k=candidate_k,
@@ -346,12 +368,23 @@ def retrieve(
         else:
             final = fused[:k]
 
+    # --------------------------------------------------------------
+    # Step 5: ACL Filtering (Phase 4.3)
+    # --------------------------------------------------------------
+    final, dropped = filter_chunks_by_role(final, user_role)
+
     # Observability log — important for audit trails in banking
     logger.info(f"  Final: {len(final)} chunks returned for generation")
     for i, doc in enumerate(final):
         src = doc.metadata.get("source_file", "?")
         pg = doc.metadata.get("page_number", "?")
         logger.debug(f"  [{i+1}] {src} page {pg}: {doc.page_content[:60]}...")
+
+    # ------------------------------------------------------------------
+    # Phase 4.7: Cache store (TTL: 5 min)
+    # ------------------------------------------------------------------
+    _retrieval_cache[cache_key] = final
+    _cache_expiry[cache_key] = time.time() + 300 # 5 minutes
 
     return final
 
@@ -361,10 +394,12 @@ def invalidate_bm25_cache():
     Force BM25 index rebuild on next retrieval call.
     Call this after ingesting new documents so BM25 picks up new chunks.
     """
-    global _bm25_index, _bm25_corpus
+    global _bm25_index, _bm25_corpus, _retrieval_cache, _cache_expiry
     _bm25_index = None
     _bm25_corpus = []
-    logger.info("BM25 cache invalidated — will rebuild on next retrieval.")
+    _retrieval_cache = {}
+    _cache_expiry = {}
+    logger.info("BM25 and result caches invalidated.")
 
 
 def retrieve_with_scores(
