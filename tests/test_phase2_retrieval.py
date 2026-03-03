@@ -21,6 +21,19 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# sentence-transformers is NOT in requirements-ci.txt (too heavy for unit test CI)
+# Cross-encoder tests are skipped if it's not installed
+try:
+    import sentence_transformers  # noqa: F401
+    sentence_transformers_available = True
+except ImportError:
+    sentence_transformers_available = False
+
+requires_sentence_transformers = pytest.mark.skipif(
+    not sentence_transformers_available,
+    reason="sentence-transformers not installed (not in requirements-ci.txt)",
+)
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -145,6 +158,7 @@ class TestRRFFusion:
 class TestCrossEncoderReranker:
     """Cross-encoder should return the correct number of re-ranked chunks."""
 
+    @requires_sentence_transformers
     @patch("sentence_transformers.CrossEncoder")
     def test_reranker_returns_top_k_results(self, mock_ce_class):
         """Cross-encoder should return exactly top_k results."""
@@ -160,6 +174,7 @@ class TestCrossEncoderReranker:
 
         assert len(result) == 3
 
+    @requires_sentence_transformers
     @patch("sentence_transformers.CrossEncoder")
     def test_reranker_orders_by_score_descending(self, mock_ce_class):
         """Cross-encoder should return chunks in descending relevance order."""
@@ -177,6 +192,7 @@ class TestCrossEncoderReranker:
         # Higher-scored doc should be first
         assert result[0].page_content == doc_high.page_content
 
+    @requires_sentence_transformers
     def test_reranker_falls_back_gracefully_on_error(self):
         """If cross-encoder fails (e.g. model not found), should return candidates[:k]."""
         from src.retriever import _cross_encoder_rerank
