@@ -1,0 +1,44 @@
+# ============================================================
+# CI-only requirements — lightweight, no torch, no GPU models
+# Used for unit tests in GitHub Actions
+# ============================================================
+
+# --- Core LangChain ---
+langchain==0.3.14
+langchain-community==0.3.14
+langchain-groq==0.2.4
+langchain-chroma==0.2.2
+langchain-huggingface==0.1.2
+
+# --- Vector store ---
+chromadb==0.6.3
+
+# --- Document loaders ---
+pypdf==5.1.0
+
+# --- Hybrid retrieval ---
+rank-bm25==0.2.2
+numpy>=1.24.0
+
+# --- API ---
+fastapi==0.115.8
+uvicorn[standard]==0.34.0
+pydantic==2.10.6
+pydantic-settings==2.7.1
+python-multipart==0.0.20
+
+# --- Config ---
+python-dotenv==1.0.1
+pyyaml==6.0.2
+
+# --- Token counting ---
+tiktoken==0.8.0
+
+# --- Testing ---
+pytest==8.3.4
+httpx==0.28.1
+
+# NOTE: sentence-transformers, torch, transformers are NOT included here.
+# Unit tests mock out all embedding/LLM calls so these heavy packages
+# are not needed. They are only installed for the RAGAS faithfulness
+# gate job which uses the full requirements.txt.
