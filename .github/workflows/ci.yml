@@ -86,7 +86,17 @@ jobs:
         run: python src/ingest.py --dir data/mock --doc-type internal
 
       - name: Run RAGAS evaluation (faithfulness gate = 0.85)
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
+          # If GROQ_API_KEY secret is not set in GitHub, skip gracefully
+          if [ -z "$GROQ_API_KEY" ] || [ "$GROQ_API_KEY" = "gsk_dummy_ci_key_not_real" ]; then
+            echo "WARNING: GROQ_API_KEY secret not configured in GitHub."
+            echo "Skipping RAGAS evaluation. Add the secret at:"
+            echo "  Settings -> Secrets and variables -> Actions -> New repository secret"
+            echo "  Name: GROQ_API_KEY"
+            exit 0
+          fi
           python eval/evaluate.py \
             --dataset eval/golden_dataset.json \
             --output eval/results.json \
