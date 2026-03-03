@@ -145,7 +145,7 @@ class TestRRFFusion:
 class TestCrossEncoderReranker:
     """Cross-encoder should return the correct number of re-ranked chunks."""
 
-    @patch("src.retriever.CrossEncoder")
+    @patch("sentence_transformers.CrossEncoder")
     def test_reranker_returns_top_k_results(self, mock_ce_class):
         """Cross-encoder should return exactly top_k results."""
         from src.retriever import _cross_encoder_rerank
@@ -160,7 +160,7 @@ class TestCrossEncoderReranker:
 
         assert len(result) == 3
 
-    @patch("src.retriever.CrossEncoder")
+    @patch("sentence_transformers.CrossEncoder")
     def test_reranker_orders_by_score_descending(self, mock_ce_class):
         """Cross-encoder should return chunks in descending relevance order."""
         from src.retriever import _cross_encoder_rerank
@@ -183,7 +183,7 @@ class TestCrossEncoderReranker:
 
         candidates = [make_doc(f"Chunk {i}") for i in range(5)]
 
-        with patch("src.retriever.CrossEncoder", side_effect=ImportError("no model")):
+        with patch("sentence_transformers.CrossEncoder", side_effect=ImportError("no model")):
             result = _cross_encoder_rerank("query", candidates, top_k=3)
 
         assert len(result) == 3
